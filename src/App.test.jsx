@@ -1,5 +1,7 @@
-import {beforeEach,describe,expect,it} from 'vitest'
+import {beforeEach,describe,expect,it,vi} from 'vitest'
 import {fireEvent,render,screen} from '@testing-library/react'
+
+vi.mock('./lib/supabase',()=>({config:{configured:false,reason:'Укажите VITE_SUPABASE_URL и публичный anon/publishable key в .env'},supabase:null}))
 import App from './App'
 
 describe('Split v2 без облачной конфигурации',()=>{

@@ -167,7 +167,7 @@ begin
  if v_group_id is null then raise exception 'Invalid invite code'; end if;
  insert into public.group_users(group_id,user_id,role) values(v_group_id,auth.uid(),'member') on conflict do nothing;
  select display_name into v_name from public.profiles where id=auth.uid();
- insert into public.members(group_id,user_id,name,created_by) values(v_group_id,auth.uid(),coalesce(v_name,'Участник'),auth.uid()) on conflict(group_id,user_id) do nothing;
+ insert into public.members(group_id,user_id,name,created_by) values(v_group_id,auth.uid(),coalesce(v_name,'Участник'),auth.uid()) on conflict on constraint members_group_id_user_id_key do nothing;
  return query select v_group_id;
 end $$;
 
@@ -206,7 +206,10 @@ begin
    insert into public.members(group_id,name,color,created_by) values(v_gid,left(coalesce(nullif(trim(m->>'name'),''),'Участник'),80),m->>'color',auth.uid()) returning id into v_mid;
    member_map=member_map||jsonb_build_object(m->>'id',v_mid::text);
   end loop;
-  if jsonb_array_length(coalesce(g->'members','[]'::jsonb))=0 then insert into public.members(group_id,user_id,name,created_by) select v_gid,auth.uid(),display_name,auth.uid() from public.profiles where id=auth.uid(); end if;
+  -- Keep expense participants from v1 intact, and also create a linked member
+  -- for the importing account so the owner can participate in future expenses.
+  insert into public.members(group_id,user_id,name,created_by)
+  select v_gid,auth.uid(),display_name,auth.uid() from public.profiles where id=auth.uid();
   for e in select * from jsonb_array_elements(coalesce(g->'expenses','[]'::jsonb)) loop
    if member_map ? (e->>'payerId') then
     insert into public.expenses(group_id,description,amount,paid_by,expense_date,created_by) values(v_gid,left(coalesce(nullif(trim(e->>'description'),''),'Расход'),240),greatest((e->>'amount')::numeric,0.01),(member_map->>(e->>'payerId'))::uuid,coalesce((e->>'date')::date,current_date),auth.uid()) returning id into v_eid;
@@ -223,12 +226,20 @@ end $$;
 
 grant usage on schema public to authenticated;
 grant select,insert,update,delete on public.profiles,public.groups,public.group_users,public.members,public.expenses,public.expense_participants,public.settlements to authenticated;
+revoke all on function public.create_group_with_invite(text,text),public.join_group_by_code(text),public.save_expense(uuid,uuid,text,numeric,uuid,date,uuid[]),public.import_local_v1(jsonb) from public;
 grant execute on function public.create_group_with_invite(text,text),public.join_group_by_code(text),public.save_expense(uuid,uuid,text,numeric,uuid,date,uuid[]),public.import_local_v1(jsonb) to authenticated;
 revoke all on function public.is_group_user(uuid),public.is_group_owner(uuid) from public;
 grant execute on function public.is_group_user(uuid),public.is_group_owner(uuid) to authenticated;
 
-do $$ begin
- alter publication supabase_realtime add table public.groups,public.group_users,public.members,public.expenses,public.expense_participants,public.settlements;
-exception when duplicate_object then null; end $$;
+do $$
+declare table_name text;
+begin
+ foreach table_name in array array['groups','group_users','members','expenses','expense_participants','settlements'] loop
+  begin
+   execute format('alter publication supabase_realtime add table public.%I',table_name);
+  exception when duplicate_object then null;
+  end;
+ end loop;
+end $$;
 
 commit;
