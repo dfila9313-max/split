@@ -2,33 +2,22 @@ import {beforeEach,describe,expect,it} from 'vitest'
 import {fireEvent,render,screen} from '@testing-library/react'
 import App from './App'
 
-describe('Основные сценарии Split',()=>{
+describe('Split v2 без облачной конфигурации',()=>{
  beforeEach(()=>{localStorage.clear();document.documentElement.removeAttribute('data-theme')})
 
- it('показывает тестовую группу и открывает детали',()=>{
+ it('не пытается подключаться с отсутствующими ключами',()=>{
   render(<App/>)
-  expect(screen.getByText('Поездка в Италию')).toBeInTheDocument()
-  fireEvent.click(screen.getByText('Поездка в Италию'))
-  expect(screen.getByText('Ужин в Риме')).toBeInTheDocument()
-  expect(screen.getAllByText(/198,00/).length).toBeGreaterThan(0)
+  expect(screen.getByRole('heading',{name:'Нужна настройка Supabase'})).toBeInTheDocument()
+  expect(screen.getByText(/VITE_SUPABASE_URL/)).toBeInTheDocument()
  })
 
- it('создаёт новую локальную группу',()=>{
+ it('сохраняет локальные данные v1 и открывает только просмотр',()=>{
+  localStorage.setItem('split-data-v1',JSON.stringify({theme:'dark',groups:[{id:'old',name:'Старая поездка',currency:'EUR',members:[],expenses:[],settlements:[]}]}))
   render(<App/>)
-  fireEvent.click(screen.getByText('Новая группа'))
-  fireEvent.change(screen.getByPlaceholderText('Например, поездка в Японию'),{target:{value:'Выходные'}})
-  fireEvent.click(screen.getByRole('button',{name:'Создать группу'}))
-  expect(screen.getByText('Выходные')).toBeInTheDocument()
-  expect(JSON.parse(localStorage.getItem('split-data-v1')).groups).toHaveLength(2)
- })
-
- it('переключает тему и сохраняет выбор',()=>{
-  render(<App/>)
-  fireEvent.click(screen.getByRole('button',{name:'Тёмная'}))
+  expect(screen.getByText(/1 групп/)).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button',{name:'Открыть локальный просмотр'}))
+  expect(screen.getByText('Старая поездка')).toBeInTheDocument()
   expect(document.documentElement).toHaveAttribute('data-theme','dark')
-  expect(JSON.parse(localStorage.getItem('split-data-v1')).theme).toBe('dark')
-  fireEvent.click(screen.getByRole('button',{name:'Светлая'}))
-  expect(document.documentElement).toHaveAttribute('data-theme','light')
-  expect(JSON.parse(localStorage.getItem('split-data-v1')).theme).toBe('light')
+  expect(JSON.parse(localStorage.getItem('split-data-v1')).groups[0].name).toBe('Старая поездка')
  })
 })
