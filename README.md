@@ -39,6 +39,25 @@ npm test
 npm run build
 ```
 
+## PWA and GitHub Pages
+
+The production build includes an installable web manifest, iOS home-screen metadata and a versioned service worker. Only the static application shell is precached; Supabase API/Auth/Realtime traffic is never cached by the service worker.
+
+```bash
+npm run build
+npm run preview
+```
+
+For GitHub Pages, add repository secrets `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`, then enable **Settings → Pages → Source: GitHub Actions**. The workflow in `.github/workflows/deploy-pages.yml` builds the branch with the repository subpath as Vite's base URL and deploys `dist` over HTTPS.
+
+For another static host mounted at a subpath, set `VITE_BASE_PATH` during the build (it must begin and end with `/`):
+
+```bash
+VITE_BASE_PATH=/split/ npm run build
+```
+
+Authentication providers that redirect back to the app must allow the final HTTPS site URL in Supabase Auth URL configuration.
+
 ## Android
 
 Requires Android Studio / Android SDK and JDK 21.
