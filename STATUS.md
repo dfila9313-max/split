@@ -1,8 +1,9 @@
 # Split v2 / PWA status
 
-Updated: 2026-08-27
+Updated: 2026-08-27 08:51 GMT+2
 Branch: `v2-supabase`
-Base Supabase commit: `2d054650392a3df88d067b2c4186350fd52b292e`
+Last implementation commit before this status update: `e9654cbf3fd8a83139ae4253f7ee09a4980ef873`
+State: development intentionally stopped and safely saved.
 
 ## Ready
 
@@ -16,26 +17,29 @@ Base Supabase commit: `2d054650392a3df88d067b2c4186350fd52b292e`
 - Vite builds work both at `/` and at a configurable static-host subpath through `VITE_BASE_PATH`.
 - GitHub Pages deployment workflow is included at `.github/workflows/deploy-pages.yml`.
 
-## Verified
+## Verified before stopping
 
+- Current branch: `v2-supabase`.
+- No interrupted merge, rebase, cherry-pick or revert operation was present.
+- Repository integrity check (`git fsck --no-dangling`) passed.
+- `git diff`, staged diff and `git diff --check` were clean before this status update.
 - `npm test -- --run`: 14/14 tests passed.
 - `npm run lint`: passed.
 - `npm run build`: passed for root hosting.
 - `VITE_BASE_PATH=/split/ npm run build`: passed for GitHub Pages-style subpath hosting.
-- `dist` contains `manifest.webmanifest`, generated `sw.js`, 192/512/maskable icons and `apple-touch-icon.png`.
-- Root and `/split/` asset, manifest and service-worker paths were inspected.
-- Workflow YAML parses successfully.
-- `git diff --check` is clean.
-- `.env` remains ignored and no secret-like file is included in the pending Git changes.
+- Generated manifest, service worker and required icons were inspected.
+- Local `.env` is ignored by Git. Only the placeholder-only `.env.example` is tracked.
+- No passwords, private API keys, credentials or real Supabase project URL are intended for Git.
 
-## Remaining for GitHub Pages
+## Remaining
 
-1. Create or connect the GitHub repository and push branch `v2-supabase`.
-2. Add GitHub Actions repository secrets `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (public browser key only; never use `service_role`).
-3. In GitHub repository settings, choose **Pages → Source: GitHub Actions**.
-4. Run the `Deploy PWA to GitHub Pages` workflow and verify the final HTTPS URL on iPhone Safari and Android Chrome.
-5. Add that exact HTTPS URL to the allowed redirect/site URL configuration in Supabase Auth.
+1. Connect or create the GitHub repository and add it as a Git remote.
+2. Authenticate GitHub CLI or otherwise provide authorized repository access.
+3. Add GitHub Actions repository secrets `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` using only the public browser key, never `service_role`.
+4. Enable **Pages → Source: GitHub Actions** and run the included deployment workflow.
+5. Verify the final HTTPS installation/update flow on iPhone Safari and Android Chrome.
+6. Add the exact deployed HTTPS URL to Supabase Auth allowed site/redirect URLs.
 
-## Continue from here
+## Exact next step
 
-Start with GitHub repository/remote setup and deployment configuration. Do not redo Supabase implementation or integration tests unless application code or database migrations change.
+Ask the user which GitHub account/organization should own repository `split` and whether it should be public or private. After receiving that answer, authenticate GitHub access, create/connect the repository, add the remote and push branch `v2-supabase`. Do not redo Supabase or PWA implementation unless code or database migrations change.
